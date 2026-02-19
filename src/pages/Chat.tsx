@@ -15,106 +15,58 @@ const DEFAULT_MESSAGES: Message[] = [
 
 // ProgressStep Component - shows tool execution progress
 const ProgressStepItem = memo(function ProgressStepItem({ step }: { step: ProgressStep }) {
-  const [isExpanded, setIsExpanded] = useState(false);
   const isRunning = step.status === 'running';
   const isError = step.status === 'error';
   const isCompleted = step.status === 'completed';
 
-  const getToolIcon = (tool: string) => {
-    if (!tool) return '🔧';
-    const t = tool.toLowerCase();
-    if (t.includes('exec') || t.includes('bash') || t.includes('shell')) return '💻';
-    if (t.includes('read') || t.includes('file') || t.includes('grep')) return '📖';
-    if (t.includes('write') || t.includes('edit') || t.includes('create')) return '✍️';
-    if (t.includes('search') || t.includes('web')) return '🔍';
-    if (t.includes('browser') || t.includes('playwright')) return '🌐';
-    return '🔧';
-  };
-
-  const hasContent = step.content && step.content.trim().length > 0;
-  const contentPreviewLength = 80;
-  const isLongContent = hasContent && step.content && step.content.length > contentPreviewLength;
-
   return (
     <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`flex items-start gap-2 px-3 py-2 rounded-lg border ${
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
         isError
-          ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+          ? 'bg-red-50 border-red-200'
           : isCompleted
-          ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-          : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+          ? 'bg-green-50 border-green-200'
+          : 'bg-blue-50 border-blue-200'
       }`}
     >
       {/* Status Icon */}
-      <div className="mt-0.5">
-        {isRunning && (
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"
-          />
-        )}
-        {isCompleted && (
-          <span className="text-green-600 text-lg">✓</span>
-        )}
-        {isError && (
-          <span className="text-red-600 text-lg">✕</span>
-        )}
-      </div>
+      {isRunning && (
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"
+        />
+      )}
+      {isCompleted && (
+        <span className="text-green-600 text-lg">OK</span>
+      )}
+      {isError && (
+        <span className="text-red-600 text-lg">X</span>
+      )}
 
       {/* Tool Info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-lg">{getToolIcon(step.tool || '')}</span>
+        <div className="flex items-center gap-2">
           {step.tool && (
-            <span className="text-sm font-medium text-gray-900 dark:text-white">
+            <span className="text-sm font-medium text-gray-900">
               {step.tool}
-            </span>
-          )}
-          {step.file && (
-            <span className="text-xs px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-mono truncate max-w-[200px]">
-              {step.file}
             </span>
           )}
           {step.action && (
             <span className={`text-xs px-1.5 py-0.5 rounded ${
-              isRunning ? 'bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300' :
-              isCompleted ? 'bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-300' :
-              'bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-300'
+              isRunning ? 'bg-blue-100 text-blue-700' :
+              isCompleted ? 'bg-green-100 text-green-700' :
+              'bg-red-100 text-red-700'
             }`}>
               {step.action}
             </span>
           )}
         </div>
-
-        {/* Expandable Content */}
-        {hasContent && (
-          <div className="mt-1.5">
-            {isLongContent && !isExpanded ? (
-              <button
-                onClick={() => setIsExpanded(true)}
-                className="text-xs font-mono text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded"
-              >
-                {step.content.substring(0, contentPreviewLength)}...
-                <span className="text-[#10A37F] ml-1">(expand)</span>
-              </button>
-            ) : (
-              <div className="relative">
-                <pre className="text-xs font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto max-h-32 overflow-y-auto text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-all">
-                  {step.content}
-                </pre>
-                {isLongContent && isExpanded && (
-                  <button
-                    onClick={() => setIsExpanded(false)}
-                    className="absolute top-1 right-1 text-xs text-[#10A37F] hover:underline"
-                  >
-                    collapse
-                  </button>
-                )}
-              </div>
-            )}
+        {step.file && (
+          <div className="text-xs text-gray-500 truncate mt-0.5">
+            {step.file}
           </div>
         )}
       </div>
@@ -636,19 +588,10 @@ export function Chat() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="border-b border-[#E5E5E5] dark:border-[#333333] bg-[#F8F8F8] dark:bg-[#1E1E1E] overflow-hidden"
+            className="border-b border-[#E5E5E5] dark:border-[#333333] bg-gray-50 dark:bg-[#242424] px-4 py-2 overflow-hidden"
           >
-            <div className="px-4 py-2 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-[#1A1A1A] dark:text-white">⚡ Activity</span>
-                <span className="text-xs text-[#666666] dark:text-[#999999]">
-                  {progressSteps.filter(s => s.status === 'running').length > 0 
-                    ? `${progressSteps.filter(s => s.status === 'running').length} running`
-                    : 'completed'}
-                </span>
-              </div>
-            </div>
-            <div className="px-4 pb-3 space-y-2 max-h-48 overflow-y-auto">
+            <div className="text-xs text-gray-500 dark:text-[#999999] mb-2">Tool Progress</div>
+            <div className="space-y-2 max-h-32 overflow-y-auto">
               {progressSteps.map((step, index) => (
                 <ProgressStepItem key={`${step.tool}-${step.file}-${index}`} step={step} />
               ))}

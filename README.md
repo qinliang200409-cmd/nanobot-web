@@ -99,7 +99,7 @@ nanobot-web/
 
 ## License
 
-See [nanobot LICENSE](https://github.com/HKUDS/nanobot/blob/main/LICENSE)
+MIT License - see LICENSE file for details.
 
 You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 

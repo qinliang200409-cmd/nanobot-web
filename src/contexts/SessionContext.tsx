@@ -16,6 +16,12 @@ export interface Agent {
   description?: string;
 }
 
+// Multi-agent settings
+interface MultiAgentSettings {
+  enabled: boolean;
+  selectedAgents: string[];
+}
+
 // Default agents in case API is not available
 const DEFAULT_AGENTS: Agent[] = [
   { id: 'default', name: 'Default', description: 'General purpose assistant' },
@@ -23,8 +29,27 @@ const DEFAULT_AGENTS: Agent[] = [
   { id: 'writer', name: 'Writer', description: 'Creative writer' },
 ];
 
+// Default multi-agent settings
+const DEFAULT_MULTI_AGENT_SETTINGS: MultiAgentSettings = {
+  enabled: false,
+  selectedAgents: ['coder', 'writer'],
+};
+
 const STORAGE_KEY = 'nanobot-sessions';
 const ACTIVE_SESSION_KEY = 'nanobot-active-session-id';
+
+// Backend API helpers
+async function clearBackendSession(sessionId: string) {
+  try {
+    await fetch('/api/chat/clear', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId }),
+    });
+  } catch (error) {
+    console.warn('Failed to clear backend session:', error);
+  }
+}
 
 function generateId(): string {
   return `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -75,6 +100,7 @@ interface SessionContextValue {
   sessions: Session[];
   activeSession: Session | null;
   availableAgents: Agent[];
+  multiAgentSettings: MultiAgentSettings;
   createSession: (agentId?: string) => Session;
   switchSession: (sessionId: string) => void;
   deleteSession: (sessionId: string) => void;
@@ -83,6 +109,8 @@ interface SessionContextValue {
   addMessageToSession: (sessionId: string, message: Message) => void;
   setSessionMessages: (sessionId: string, messages: Message[]) => void;
   clearSessionMessages: (sessionId: string) => void;
+  setMultiAgentEnabled: (enabled: boolean) => void;
+  setMultiAgentSelected: (agentIds: string[]) => void;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -91,6 +119,24 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [availableAgents, setAvailableAgents] = useState<Agent[]>(DEFAULT_AGENTS);
+  const [multiAgentSettings, setMultiAgentSettings] = useState<MultiAgentSettings>(DEFAULT_MULTI_AGENT_SETTINGS);
+
+  // Load multi-agent settings from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('nanobot-multi-agent');
+    if (saved) {
+      try {
+        setMultiAgentSettings(JSON.parse(saved));
+      } catch (e) {
+        console.error('Failed to parse multi-agent settings:', e);
+      }
+    }
+  }, []);
+
+  // Save multi-agent settings when changed
+  useEffect(() => {
+    localStorage.setItem('nanobot-multi-agent', JSON.stringify(multiAgentSettings));
+  }, [multiAgentSettings]);
 
   // Fetch agents from API on mount
   useEffect(() => {
@@ -151,14 +197,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const switchSession = useCallback((sessionId: string) => {
+    // Clear previous session from backend cache
+    if (activeSessionId) {
+      clearBackendSession(activeSessionId);
+    }
+    
     setActiveSessionId(sessionId);
     localStorage.setItem(ACTIVE_SESSION_KEY, sessionId);
     
     // Dispatch custom event for Chat page to listen
     window.dispatchEvent(new CustomEvent('session-changed', { detail: { sessionId } }));
-  }, []);
+  }, [activeSessionId]);
 
   const deleteSession = useCallback((sessionId: string) => {
+    // Delete session from backend
+    clearBackendSession(sessionId);
+    
     setSessions(prev => {
       const filtered = prev.filter(s => s.id !== sessionId);
       if (filtered.length === 0) {
@@ -227,11 +281,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     ));
   }, []);
 
+  const setMultiAgentEnabled = useCallback((enabled: boolean) => {
+    setMultiAgentSettings(prev => ({ ...prev, enabled }));
+  }, []);
+
+  const setMultiAgentSelected = useCallback((agentIds: string[]) => {
+    setMultiAgentSettings(prev => ({ ...prev, selectedAgents: agentIds }));
+  }, []);
+
   return (
     <SessionContext.Provider value={{
       sessions,
       activeSession,
       availableAgents,
+      multiAgentSettings,
       createSession,
       switchSession,
       deleteSession,
@@ -240,6 +303,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       addMessageToSession,
       setSessionMessages,
       clearSessionMessages,
+      setMultiAgentEnabled,
+      setMultiAgentSelected,
     }}>
       {children}
     </SessionContext.Provider>

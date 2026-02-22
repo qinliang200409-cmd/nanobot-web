@@ -19,6 +19,7 @@ export interface Message {
   content: string;
   timestamp: Date;
   toolCalls?: ToolCall[];
+  agentId?: string; // 多Agent模式下的agent标识
 }
 
 export interface ChatState {

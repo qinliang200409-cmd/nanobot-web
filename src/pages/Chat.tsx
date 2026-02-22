@@ -341,6 +341,7 @@ export function Chat() {
   const multiAgentStreamingRef = useRef<Record<string, string>>({});
   
   const [inputValue, setInputValue] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -831,6 +832,14 @@ export function Chat() {
           </AnimatePresence>
         </div>
         <div className="flex items-center gap-2">
+          {/* Search Messages */}
+          <input
+            type="text"
+            placeholder="Search messages..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="text-xs px-3 py-1.5 rounded-lg border border-[#E5E5E5] dark:border-[#444444] bg-white dark:bg-[#333333] text-[#1A1A1A] dark:text-white placeholder-[#999999] focus:outline-none focus:ring-1 focus:ring-[#1A1A1A] dark:focus:ring-white"
+          />
           <button onClick={() => setIsToolPanelOpen(true)} className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${progressSteps.length > 0 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 hover:bg-blue-200' : 'text-[#666666] dark:text-[#999999] hover:text-[#1A1A1A] dark:hover:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#333333]'}`} title="View tool execution details">
             Tools {progressSteps.length > 0 && `(${progressSteps.length})`}
           </button>
@@ -861,7 +870,7 @@ export function Chat() {
 
       <div ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 min-h-0 overflow-auto p-4 space-y-4">
         <AnimatePresence initial={false}>
-          {messages.map((message) => <MessageItem key={message.id} message={message} />)}
+          {(searchQuery ? messages.filter(m => m.content.toLowerCase().includes(searchQuery.toLowerCase())) : messages).map((message) => <MessageItem key={message.id} message={message} />)}
         </AnimatePresence>
         <AnimatePresence>
           {isStreaming && streamingContent && <StreamingContent content={streamingContent} />}
